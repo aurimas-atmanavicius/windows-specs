@@ -1,7 +1,5 @@
 import wmi
 import re
-import json
-import requests
 
 c = wmi.WMI()
 
@@ -108,9 +106,8 @@ for iter in c.Win32_DiskDrive():
         
         payload["STORAGE"].append(iter.Model)
 
-#print(json.dumps(payload, ensure_ascii=False, indent=4))
 
-# Beutiful print
+# Beautiful print
 for part in payload:
     print(part)
     for identifier in payload[part]:
