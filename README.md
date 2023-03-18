@@ -4,6 +4,9 @@ This code retrieves computer's, running Windows OS, hardware specifications via 
 
 The information printed out via the code is:
 * Serial number (if exists)
+* Operating system
+* Device name (as SYSTEM_NAME)
+* Computer user(s)
 * CPU model(s)
 * GPU model(s)
 * RAM information
