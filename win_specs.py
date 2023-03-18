@@ -104,9 +104,33 @@ def get_list_storage():
             storage.append(iter.Model)
     return storage
 
+def get_list_OS_attributes():
+    systemName = None
+    os = None
+    for iter in c.Win32_OperatingSystem():
+        if systemName == None:
+            systemName = []
+        if os == None:
+            os = []
+
+        systemName.append(iter.CSName)
+        os.append(iter.Name.split("|")[0])
+    return os, systemName
+
+def get_list_systemAccounts():
+    systemAccounts = None
+    for iter in c.Win32_UserAccount():
+        if systemAccounts == None:
+            systemAccounts = []
+        systemAccounts.append(iter.Name)
+    return systemAccounts
+
 def main():
     payload = {
         "SERIAL": None,
+        "OS": None,
+        "SYSTEM_NAME": None,
+        "USERS": None,
         "CPU": None,
         "GPU": None,
         "RAM": None,
@@ -115,6 +139,9 @@ def main():
     payload["SERIAL"] = c.Win32_ComputerSystemProduct()[0].IdentifyingNumber
     if payload["SERIAL"] == "System Serial Number":
         del payload["SERIAL"]
+
+    payload["OS"], payload["SYSTEM_NAME"] = get_list_OS_attributes()
+    payload["USERS"] = get_list_systemAccounts()
 
     payload["CPU"] = get_list_cpu()
     payload["GPU"] = get_list_gpu()
