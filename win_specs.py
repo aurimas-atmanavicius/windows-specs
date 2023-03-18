@@ -3,37 +3,31 @@ import re
 
 c = wmi.WMI()
 
-def main():
-    payload = {
-        "SERIAL": None,
-        "CPU": None,
-        "GPU": None,
-        "RAM": None,
-        "STORAGE": None
-    }
-    payload["SERIAL"] = c.Win32_ComputerSystemProduct()[0].IdentifyingNumber
-
-    if payload["SERIAL"] == "System Serial Number":
-        del payload["SERIAL"]
-
+def get_list_cpu():
+    cpu = None
     for iter in c.Win32_Processor():
-        if payload["CPU"] == None:
-            payload["CPU"] = []
-        payload["CPU"].append(iter.Name)
+        if cpu == None:
+            cpu = []
+        cpu.append(iter.Name)
+    return cpu
 
+def get_list_gpu():
+    gpu = None
     for iter in c.Win32_VideoController():
         if iter.name[len(iter.name)-2:] == "GB" or iter.name[len(iter.name)-2:] == "MB":
-            if payload["GPU"] == None:
-                payload["GPU"] = []
-            payload["GPU"].append(iter.name)
+            if gpu == None:
+                gpu = []
+            gpu.append(iter.name)
             continue
         videoAdapterString = iter.name + " "
         if int(iter.AdapterRam)/1024/1024 > 2047:
             videoAdapterString +=  str(round(int(iter.AdapterRam)/1024/1024/1024)) + " GB"
         else:  
             videoAdapterString +=  str(round(int(iter.AdapterRam)/1024/1024)) + " MB"
-        payload["GPU"].append(videoAdapterString)
+        gpu.append(videoAdapterString)
+    return gpu
 
+def get_list_ram():
     memoryFormFactorMAP = {
         "0": "Unknown",
         "1": "Other",
@@ -89,31 +83,49 @@ def main():
         "25": "FBD2",
         "26": "DDR4"
     }
-
+    ram = None
     for iter in c.Win32_PhysicalMemory():
         memoryString = ""
         memoryString += str(round(int(iter.Capacity)/1024/1024/1024)) + " GB " + str(iter.Speed) + " MHz " + memoryTypeMAP[str(iter.SMBIOSMemoryType)]
 
         memoryString = re.sub(' +', ' ', memoryString)
         memoryString = "".join(memoryString.rstrip().lstrip())
-        if payload["RAM"] == None:
-            payload["RAM"] = []
-        payload["RAM"].append(memoryString)
+        if ram == None:
+            ram = []
+        ram.append(memoryString)
+    return ram
 
+def get_list_storage():
+    storage = None
     for iter in c.Win32_DiskDrive():
         if iter.InterfaceType == "IDE" or iter.InterfaceType == "SCSI":
-            if payload["STORAGE"] == None:
-                payload["STORAGE"] = []
-            
-            payload["STORAGE"].append(iter.Model)
+            if storage == None:
+                storage = []
+            storage.append(iter.Model)
+    return storage
 
+def main():
+    payload = {
+        "SERIAL": None,
+        "CPU": None,
+        "GPU": None,
+        "RAM": None,
+        "STORAGE": None
+    }
+    payload["SERIAL"] = c.Win32_ComputerSystemProduct()[0].IdentifyingNumber
+    if payload["SERIAL"] == "System Serial Number":
+        del payload["SERIAL"]
 
+    payload["CPU"] = get_list_cpu()
+    payload["GPU"] = get_list_gpu()
+    payload["RAM"] = get_list_ram()
+    payload["STORAGE"] = get_list_storage()
+    
     # Beautiful print
     for part in payload:
         print(part)
         for identifier in payload[part]:
             print("    " + identifier)
-
 
 if __name__ == "__main__":
     main()
