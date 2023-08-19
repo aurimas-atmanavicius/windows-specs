@@ -1,0 +1,4 @@
+[default]
+disable=
+    line-too-long,
+    too-many-statements

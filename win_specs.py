@@ -1,60 +1,38 @@
+""" Python script to gather data about device's (on which it is run) specifications """
 import wmi
 import re
 
 c = wmi.WMI()
 
 def get_list_cpu():
+    """ WMI call to gather CPU info """
     cpu = None
-    for iter in c.Win32_Processor():
-        if cpu == None:
+    for i in c.Win32_Processor():
+        if cpu is None:
             cpu = []
-        cpu.append(iter.Name)
+        cpu.append(i.Name)
     return cpu
 
 def get_list_gpu():
+    """ WMI call to gather GPU info """
     gpu = None
-    for iter in c.Win32_VideoController():
-        if iter.name[len(iter.name)-2:] == "GB" or iter.name[len(iter.name)-2:] == "MB":
-            if gpu == None:
+    for i in c.Win32_VideoController():
+        if i.name[len(i.name)-2:] == "GB" or i.name[len(i.name)-2:] == "MB":
+            if gpu is None:
                 gpu = []
-            gpu.append(iter.name)
+            gpu.append(i.name)
             continue
-        videoAdapterString = iter.name + " "
-        if int(iter.AdapterRam)/1024/1024 > 2047:
-            videoAdapterString +=  str(round(int(iter.AdapterRam)/1024/1024/1024)) + " GB"
-        else:  
-            videoAdapterString +=  str(round(int(iter.AdapterRam)/1024/1024)) + " MB"
-        gpu.append(videoAdapterString)
+        video_adapter_str = i.name + " "
+        if int(i.AdapterRam)/1024/1024 > 2047:
+            video_adapter_str +=  str(round(int(i.AdapterRam)/1024/1024/1024)) + " GB"
+        else:
+            video_adapter_str +=  str(round(int(i.AdapterRam)/1024/1024)) + " MB"
+        gpu.append(video_adapter_str)
     return gpu
 
 def get_list_ram():
-    memoryFormFactorMAP = {
-        "0": "Unknown",
-        "1": "Other",
-        "2": "SIP",
-        "3": "DIP",
-        "4": "ZIP",
-        "5": "SOJ",
-        "6": "Proprietary",
-        "7": "SIMM",
-        "8": "DIMM",
-        "9": "TSOP",
-        "10": "PGA",
-        "11": "RIMM",
-        "12": "SODIMM",
-        "13": "SRIMM",
-        "14": "SMD",
-        "15": "SSMP",
-        "16": "QFP",
-        "17": "TQFP",
-        "18": "SOIC",
-        "19": "LCC",
-        "20": "PLCC",
-        "21": "BGA",
-        "22": "FPBGA",
-        "23": "LGA"
-    }
-    memoryTypeMAP = {
+    """ WMI call to gather RAM info """
+    map_memory_type = {
         "0": "Unknown",
         "1": "Other",
         "2": "DRAM",
@@ -84,48 +62,52 @@ def get_list_ram():
         "26": "DDR4"
     }
     ram = None
-    for iter in c.Win32_PhysicalMemory():
-        memoryString = ""
-        memoryString += str(round(int(iter.Capacity)/1024/1024/1024)) + " GB " + str(iter.Speed) + " MHz " + memoryTypeMAP[str(iter.SMBIOSMemoryType)]
+    for i in c.Win32_PhysicalMemory():
+        memory_string = ""
+        memory_string += str(round(int(i.Capacity)/1024/1024/1024)) + " GB " + str(i.Speed) + " MHz " + map_memory_type[str(i.SMBIOSMemoryType)]
 
-        memoryString = re.sub(' +', ' ', memoryString)
-        memoryString = "".join(memoryString.rstrip().lstrip())
-        if ram == None:
+        memory_string = re.sub(' +', ' ', memory_string)
+        memory_string = "".join(memory_string.rstrip().lstrip())
+        if ram is None:
             ram = []
-        ram.append(memoryString)
+        ram.append(memory_string)
     return ram
 
 def get_list_storage():
+    """ WMI call to gather Storage device(s) info """
     storage = None
-    for iter in c.Win32_DiskDrive():
-        if iter.InterfaceType == "IDE" or iter.InterfaceType == "SCSI":
-            if storage == None:
+    for i in c.Win32_DiskDrive():
+        if i.InterfaceType in ("IDE", "SCSI"):
+            if storage is None:
                 storage = []
-            storage.append(iter.Model)
+            storage.append(i.Model)
     return storage
 
-def get_list_OS_attributes():
-    systemName = None
-    os = None
-    for iter in c.Win32_OperatingSystem():
-        if systemName == None:
-            systemName = []
-        if os == None:
-            os = []
+def get_list_os_attributes():
+    """ WMI call to gather OS info """
+    system_name = None
+    os_version= None
+    for i in c.Win32_OperatingSystem():
+        if system_name is None:
+            system_name = []
+        if os_version is None:
+            os_version= []
 
-        systemName.append(iter.CSName)
-        os.append(iter.Name.split("|")[0])
-    return os, systemName
+        system_name.append(i.CSName)
+        os_version.append(i.Name.split("|")[0])
+    return os_version, system_name
 
-def get_list_systemAccounts():
-    systemAccounts = None
-    for iter in c.Win32_UserAccount():
-        if systemAccounts == None:
-            systemAccounts = []
-        systemAccounts.append(iter.Name)
-    return systemAccounts
+def get_list_system_accounts():
+    """ WMI call to gather OS Users info """
+    system_accounts = None
+    for i in c.Win32_UserAccount():
+        if system_accounts is None:
+            system_accounts = []
+        system_accounts.append(i.Name)
+    return system_accounts
 
 def main():
+    """ the function which will make calls to other functions to gather specs """
     payload = {
         "SERIAL": None,
         "OS": None,
@@ -140,14 +122,14 @@ def main():
     if payload["SERIAL"] == "System Serial Number":
         del payload["SERIAL"]
 
-    payload["OS"], payload["SYSTEM_NAME"] = get_list_OS_attributes()
-    payload["USERS"] = get_list_systemAccounts()
+    payload["OS"], payload["SYSTEM_NAME"] = get_list_os_attributes()
+    payload["USERS"] = get_list_system_accounts()
 
     payload["CPU"] = get_list_cpu()
     payload["GPU"] = get_list_gpu()
     payload["RAM"] = get_list_ram()
     payload["STORAGE"] = get_list_storage()
-    
+
     # Beautiful print
     for part in payload:
         print(part)
