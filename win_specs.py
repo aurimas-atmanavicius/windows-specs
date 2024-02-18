@@ -4,6 +4,15 @@ import re
 
 c = wmi.WMI()
 
+def get_list_serial():
+    """ WMI call to gather identifying number """
+    serial = []
+    serial.append(c.Win32_ComputerSystemProduct()[0].IdentifyingNumber)
+    for i in serial.copy():
+        if i == "System Serial Number":
+            serial.remove(i)
+    return serial
+
 def get_list_cpu():
     """ WMI call to gather CPU info """
     cpu = None
@@ -83,19 +92,23 @@ def get_list_storage():
             storage.append(i.Model)
     return storage
 
-def get_list_os_attributes():
-    """ WMI call to gather OS info """
+def get_list_os_attributes_system_name():
+    """ WMI call to gather OS info (system_name) """
     system_name = None
-    os_version= None
     for i in c.Win32_OperatingSystem():
         if system_name is None:
             system_name = []
+        system_name.append(i.CSName)
+    return system_name
+
+def get_list_os_attributes_os_version():
+    """ WMI call to gather OS info (os_version) """
+    os_version= None
+    for i in c.Win32_OperatingSystem():
         if os_version is None:
             os_version= []
-
-        system_name.append(i.CSName)
         os_version.append(i.Name.split("|")[0])
-    return os_version, system_name
+    return os_version
 
 def get_list_system_accounts():
     """ WMI call to gather OS Users info """
@@ -109,32 +122,21 @@ def get_list_system_accounts():
 def main():
     """ the function which will make calls to other functions to gather specs """
     payload = {
-        "SERIAL": None,
-        "OS": None,
-        "SYSTEM_NAME": None,
-        "USERS": None,
-        "CPU": None,
-        "GPU": None,
-        "RAM": None,
-        "STORAGE": None
+        "SERIAL": get_list_serial(),
+        "OS": get_list_os_attributes_os_version(),
+        "SYSTEM_NAME": get_list_os_attributes_system_name(),
+        "USERS": get_list_system_accounts(),
+        "CPU": get_list_cpu(),
+        "GPU": get_list_gpu(),
+        "RAM": get_list_ram(),
+        "STORAGE": get_list_storage()
     }
-    payload["SERIAL"] = c.Win32_ComputerSystemProduct()[0].IdentifyingNumber
-    if payload["SERIAL"] == "System Serial Number":
-        del payload["SERIAL"]
-
-    payload["OS"], payload["SYSTEM_NAME"] = get_list_os_attributes()
-    payload["USERS"] = get_list_system_accounts()
-
-    payload["CPU"] = get_list_cpu()
-    payload["GPU"] = get_list_gpu()
-    payload["RAM"] = get_list_ram()
-    payload["STORAGE"] = get_list_storage()
 
     # Beautiful print
-    for part in payload:
+    for part, values in payload.items():
         print(part)
-        for identifier in payload[part]:
-            print("    " + identifier)
+        for value in values:
+            print("    " + value)
 
 if __name__ == "__main__":
     main()
