@@ -92,18 +92,23 @@ def get_list_storage():
             storage.append(i.Model)
     return storage
 
-def get_list_os_attributes():
-    """ WMI call to gather OS info """
+def get_list_os_attributes_system_name():
+    """ WMI call to gather OS info (system_name) """
     system_name = None
-    os_version= None
     for i in c.Win32_OperatingSystem():
         if system_name is None:
             system_name = []
+        system_name.append(i.CSName)
+    return system_name
+
+def get_list_os_attributes_os_version():
+    """ WMI call to gather OS info (os_version) """
+    os_version= None
+    for i in c.Win32_OperatingSystem():
         if os_version is None:
             os_version= []
-        system_name.append(i.CSName)
         os_version.append(i.Name.split("|")[0])
-    return os_version, system_name
+    return os_version
 
 def get_list_system_accounts():
     """ WMI call to gather OS Users info """
@@ -118,8 +123,8 @@ def main():
     """ the function which will make calls to other functions to gather specs """
     payload = {
         "SERIAL": get_list_serial(),
-        "OS": get_list_os_attributes().os_version(),
-        "SYSTEM_NAME": get_list_os_attributes().system_name(),
+        "OS": get_list_os_attributes_os_version(),
+        "SYSTEM_NAME": get_list_os_attributes_system_name(),
         "USERS": get_list_system_accounts(),
         "CPU": get_list_cpu(),
         "GPU": get_list_gpu(),
