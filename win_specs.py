@@ -68,7 +68,9 @@ def get_list_ram():
         # 23 not present
         "24": "DDR3",
         "25": "FBD2",
-        "26": "DDR4"
+        "26": "DDR4",
+        "28": "DDR5",
+        "34": "DDR5"
     }
     ram = None
     for i in c.Win32_PhysicalMemory():
